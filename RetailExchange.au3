@@ -159,7 +159,7 @@ EndFunc
 ; Удаляет все PID-файлы в папке скрипта
 Func DeletePIDFile()
 	
-	UpdateProgress(100, "Процедура обмена завершает работу")
+	UpdateProgress("Процедура обмена завершает работу")
 	AddToLog("Попытка удалить PID-файлы в папке: " & @ScriptDir)
 	$mCurrFolder	=	@ScriptDir;
 	$iResult		=	FileDelete($mCurrFolder & "\*." & $cPIDFileExt)
@@ -184,7 +184,7 @@ Func CreatePIDFile()
 	
 	$sMsg = "Создан новый PID-файл: " & String($iCurrentPID)
 	AddToLog($sMsg)
-	UpdateProgress(20, $sMsg)
+	UpdateProgress($sMsg)
 	
 EndFunc	
 
@@ -205,19 +205,8 @@ Func CreateProgressForm()
 	
 EndFunc
 
-Func UpdateProgress($iProgress, $sStatusText)
-	
-	; Проверка существования объектов
-	If GUICtrlGetHandle($Progressbar) <> 0 Then
-		; Изменение положения прогрессбара
-		GUICtrlSetData($Progressbar, $iProgress)
-	EndIf
-	
-	If GUICtrlGetHandle($LabText) <> 0 Then
-		; Обновление статусной информации
-		GUICtrlSetData($LabText, $sStatusText)
-	EndIf
-	
+Func UpdateProgress($sStatusText)
+		
 	If $bShowTrayTip Then
 		ToolTip($sStatusText, @DesktopWidth - 260, @DesktopHeight - 90, "Обмен данными", 1)
 	EndIf
@@ -268,7 +257,7 @@ Func RunUpdateCfg()
 		
 		$connRetail	= 0
 		$v8ComConnector = 0
-		UpdateProgress(50, "Ожидание освобождения памяти," & @CRLF & " занятой COM-объектами")
+		UpdateProgress("Ожидание освобождения памяти," & @CRLF & " занятой COM-объектами")
 		Sleep(500)
 		AddToLog("Ожидание освобождения памяти от объектов")
 
@@ -293,18 +282,20 @@ Func RunUpdateCfg()
 		$sUpdCmdLine	=	$sV8exePath & " DESIGNER /F" & $sIBPath  & " /N" & $sIBAdminPwd & " /P" & $sIBAdminPwd 
 		$sUpdCmdLine	=	$sUpdCmdLine & " /WA- /UpdateDBCfg /Out""" & $sServiceFileName & """ -NoTruncate /DisableStartupMessages"
 		; Принятие изменений
-		UpdateProgress(50, "Выполняется принятие изменений")
+		UpdateProgress("Выполняется принятие изменений")
 		AddToLog("Выполняется принятие изменений")
 		$PIDUpdCfg	= Run($sUpdCmdLine)
 		ProcessWaitClose($PIDUpdCfg)
-		UpdateProgress(50, "Команда на принятие" & @CRLF & "изменений выполнена")
+		UpdateProgress("Команда на принятие" & @CRLF & "изменений выполнена")
 		AddToLog("Команда на принятие изменений выполнена")
+		Return True
 		
 	Else
 		
 		; Таймаут или пользователь отказался от применения обновления
-		UpdateProgress(50, "Отказ принятия изменений")
+		UpdateProgress("Отказ принятия изменений")
 		AddToLog("Отмена принятия изменений. Результат диалога: " & String($bQResult) )
+		Return False
 		
 	EndIf
 		
@@ -341,17 +332,17 @@ Func RunApplyCfg()
 		; Запуск клиента для применения изменений
 		$sRunClientCmdLine	=	$sV8exePath & " ENTERPRISE /F""" & $sIBPath  & """ /N" & $sIBAdminPwd & " /P" & $sIBAdminPwd 
 		$sRunClientCmdLine	=	$sRunClientCmdLine & " /WA-"
-		UpdateProgress(60, "Выполняется запуск приложения" & @CRLF & "для принятия изменений")
+		UpdateProgress("Выполняется запуск приложения" & @CRLF & "для принятия изменений")
 		AddToLog("Выполняется запуск клиентского приложения")
 		$PIDApplyCfg		=	Run($sRunClientCmdLine)
 		ProcessWaitClose($PIDApplyCfg)
-		UpdateProgress(60, "Применение изменений" & @CRLF & "выполнено успешно")
+		UpdateProgress("Применение изменений" & @CRLF & "выполнено успешно")
 		AddToLog("Обновление базы данных выполнено")
 		
 	Else
 		
 		; Таймаут или пользователь отказался от принятия обновления
-		UpdateProgress(60, "Отмена принятия изменений")
+		UpdateProgress("Отмена принятия изменений")
 		AddToLog("Отмена принятия изменений. Результат диалога: " & String($bQResult) )
 		
 	EndIf
@@ -364,18 +355,18 @@ Func RunExchange()
 	$v8ComConnector = ObjCreate($sComConnectorObj)
 	If @error Then
 		AddToLog("Ошибка при создании COM-объекта " & $sComConnectorObj)
-		UpdateProgress(20, "Ошибка при создании COM-объекта " & $sComConnectorObj)
+		UpdateProgress("Ошибка при создании COM-объекта " & $sComConnectorObj)
 		Exit
 	EndIf
 	
 	AddToLog("Попытка подключения к ИБ");
-	UpdateProgress(25, "Попытка подключения к ИБ")
+	UpdateProgress("Попытка подключения к ИБ")
 	
 	$connRetail	=	$v8ComConnector.Connect($sRetailIBConn);
 
 	If Not IsObj($connRetail) Then
 		
-		UpdateProgress(30, "При подключении к ИБ произошла ошибка")
+		UpdateProgress("При подключении к ИБ произошла ошибка")
 		AddToLog("При подключении к ИБ произошла ошибка")
 		AddToLog("Скрипт завершает работу из-за ошибки соединения с ИБ")
 		; Может вставить отправку alarm'a? Например на SMS или email
@@ -383,23 +374,29 @@ Func RunExchange()
 		
 	Else
 		AddToLog("Подключение к ИБ установлено")
-		UpdateProgress(30, "Подключились к ИБ")
+		UpdateProgress("Подключились к ИБ")
 	EndIf
 	
 	If $connRetail.КонфигурацияИзменена() Then
-		UpdateProgress(40, "Конфигурация ИБ изменена."& @CRLF & "Попытка применить изменения")
+		UpdateProgress("Конфигурация ИБ изменена."& @CRLF & "Попытка применить изменения")
 		AddToLog("Конфигурация ИБ изменена. Требуется применение изменений")
-		RunUpdateCfg()
-		DeletePIDFile()
-		Exit
+
+		If RunUpdateCfg() Then
+			$bApplyCfg	= True
+		Else
+			; Если обновление не прошло успешно, нужно закончить сеанс
+			DeletePIDFile()
+			Exit
+		EndIf
+		
 	EndIf
-	
+
 	; Не разобрался как узнать, что ИБ требует принять изменения.
 	; Поэтому принятие изменений выполнится автоматически при запуске приложения (в управляемом режиме)
 	; или если передан параметр коммандной строки ApplyCfg
 	If $bApplyCfg Then
 
-		UpdateProgress(60, "ИБ заблокирована для обновления." & @CRLF & "Попытка применения обновления")
+		UpdateProgress("ИБ заблокирована для обновления." & @CRLF & "Попытка применения обновления")
 		AddToLog("ИБ заблокирована для обновления. Выполняется попытка применения обновления")
 		RunApplyCfg()
 		DeletePIDFile()
@@ -408,13 +405,14 @@ Func RunExchange()
 	EndIf
 	
 	If $bUpdateRS Then
-		UpdateProgress(60, "Обновление РС ИнфОстТоваров")
+		UpdateProgress("Обновление РС ИнфОстТоваров")
 		AddToLog("Выполнение процедуры ОбновлениеРегистраСведенийИнформативныеОстаткиТоваровДляМагазинов")
 		$connRetail.ЗапасыСервер.ОбновлениеРегистраСведенийИнформативныеОстаткиТоваровДляМагазинов()
 	EndIf
+
 	$NodeList	=	$connRetail.ПланыОбмена.ПоМагазину.Выбрать()
 	$ThisNode	=	$connRetail.ПланыОбмена.ПоМагазину.ЭтотУзел()
-	UpdateProgress(70, "Выполнение процедуры обмена")
+	UpdateProgress("Выполнение процедуры обмена")
 	AddToLog("Выполнение процедуры обмена. Этот узел: " & $ThisNode.Description & " (" & $ThisNode.Code & ")")
 	while ($NodeList.Next())
 	
@@ -427,7 +425,7 @@ Func RunExchange()
 		
 	WEnd
 	
-	UpdateProgress(90, "Обмен данными завершен")
+	UpdateProgress("Обмен данными завершен")
 	AddToLog("Освобождение области памяти, отведенной под v8ComConnector")
 	While IsObj($connRetail) OR IsObj($v8ComConnector)
 		$connRetail	= 0
@@ -477,7 +475,7 @@ If ( CanIContinue() ) Then
 	
 else
 
-	UpdateProgress(100, "Скрипт не может продолжить работу." & @CRLF & "Условие CanIContinue не выполнилось")
+	UpdateProgress("Скрипт не может продолжить работу." & @CRLF & "Условие CanIContinue не выполнилось")
 	AddToLog("Скрипт не может продолжить работу. Условие CanIContinue не выполнилось");
 	AddToLog("<= Скрипт завершает работу");
 	
