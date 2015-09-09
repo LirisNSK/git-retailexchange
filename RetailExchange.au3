@@ -25,7 +25,7 @@ Global	$bShowTrayTip	; Показать/не показывать сообщение в трее
 Global	$bUpdateRS		; Обновлять регистр сведений ИнформативныеОстаткиТоваровДляМагазинов
 Global	$bApplyCfg		; Применить изменения конфигурации
 Global	$sComConnectorObj	; Имя COM-объекта 
-Global	$v8ComConnector, $connRetail
+Global	$v8ComConnector, $connRetail	; Переменные для работы с объектами 1С
 
 ; Переменные для оконного интерфейса
 Global	$ProgressBar, $LabText
@@ -191,8 +191,10 @@ EndFunc
 ; Функции работы с окнами
 ; *****************************************************************************
 
+; Функция создает форму с прогрессбаром
 Func CreateProgressForm()
 
+	;Подстроимся под размер экрана
 	$_DH	= Ceiling(@DesktopHeight / 20)
 	$_DW	= Ceiling(@DesktopWidth / 30)
 
@@ -205,6 +207,7 @@ Func CreateProgressForm()
 	
 EndFunc
 
+; Фнкфия показывает всплывающую подстказку в трее
 Func UpdateProgress($sStatusText)
 		
 	If $bShowTrayTip Then
@@ -229,6 +232,7 @@ Func SplitConnectionString($sIBConn)
 
 		$sParamName	= StringLeft($aIBParams[$iCurrParam], StringInStr($aIBParams[$iCurrParam], "=") -1)
 		
+		; Обрабатываю только файловый вариант подключения
 		Select
 			Case StringLower($sParamName) = StringLower("File")
 				$aResult[0]	= StringReplace($aIBParams[$iCurrParam], $sParamName & "=", "")
@@ -303,7 +307,7 @@ EndFunc
 
 Func RunApplyCfg()
 
-	;v8exe & " DESIGNER /F" & $sIBPath  & " /N" & IBAdminName & " /P" & IBAdminPwd & " /WA- /UpdateDBCfg /Out" & $ServiceFileName & " -NoTruncate /DisableStartupMessages"
+	;v8exe & " ENTERPRISE /F" & $sIBPath  & " /N" & IBAdminName & " /P" & IBAdminPwd & " "
 	Local $aConnParams[3]
 	Local $sUpdCmdLine, $sRunClientCmdLine
 	Local $sIBPath, $sIBAdmin, $sIBAdminPwd, $ServiceFileName
@@ -317,8 +321,8 @@ Func RunApplyCfg()
 	WEnd
 	
 	$sQuestion	=	"Уважаемый пользователь!" & @CRLF & "База данных заблокирована для обновления" & @CRLF
-	$sQuestion	=	$sQuestion & "Пожалуйста, закройте РМК и нажмите кнопку ОК" & @CRLF & "Чтобы отложить это действие нажмите ОТМЕНА"
-	$bQResult	=	MsgBox(1 + 32, "ИБ заблокирована для обновления", $sQuestion, 60)
+	$sQuestion	=	$sQuestion & "Пожалуйста, закройте РМК и нажмите кнопку ОК (в этом диалоге)" & @CRLF & "Чтобы отложить это действие нажмите ОТМЕНА"
+	$bQResult	=	MsgBox(1 + 32, "База заблокирована для обновления", $sQuestion, 60)
 	
 	If $bQResult = 1 Then
 	
@@ -339,17 +343,19 @@ Func RunApplyCfg()
 		UpdateProgress("Применение изменений" & @CRLF & "выполнено успешно")
 		AddToLog("Обновление базы данных выполнено")
 		
+		Return True
 	Else
 		
 		; Таймаут или пользователь отказался от принятия обновления
-		UpdateProgress("Отмена принятия изменений")
-		AddToLog("Отмена принятия изменений. Результат диалога: " & String($bQResult) )
+		UpdateProgress("Отмена первого запуска с полными правами")
+		AddToLog("Отмена первого запуска с полными правами. Результат диалога: " & String($bQResult) )
+		
 		
 	EndIf
 		
 EndFunc
  
-; Функция выполняет процедуры обмена данными
+; Функция выполняет обмен данными
 Func RunExchange()
 
 	$v8ComConnector = ObjCreate($sComConnectorObj)
@@ -362,7 +368,8 @@ Func RunExchange()
 	AddToLog("Попытка подключения к ИБ");
 	UpdateProgress("Попытка подключения к ИБ")
 	
-	$connRetail	=	$v8ComConnector.Connect($sRetailIBConn);
+	; Попытка подключиться к базе данных по указанной строке подключения
+	$connRetail	=	$v8ComConnector.Connect($sRetailIBConn)
 
 	If Not IsObj($connRetail) Then
 		
