@@ -35,11 +35,11 @@ Func ReadParamsFromIni()
 	
 	$sIniFileName	= StringRegExpReplace(@ScriptFullPath, '^(?:.*\\)([^\\]*?)(?:\.[^.]+)?$', '\1')
 	$sIniFileName	= @ScriptDir & "\" & $sIniFileName & ".ini"
-	; „итает из INI-файла параметр 'Key' в секции 'Section'.
+	; „итает из INI-файла параметр 'Key' в секции 'EXCHANGE'.
 	$sLogfileName		= IniRead($sIniFileName,	"EXCHANGE", "LogfileName", "retail_exchange.log")
 	$sRetailIBConn		= IniRead($sIniFileName,	"EXCHANGE", "RetailIBConn", "File=D:\Retail;Usr=Admin;Pwd=Admin;")
 	$sV8exePath			= IniRead($sIniFileName,	"EXCHANGE", "V8exePath", """C:\Program Files\1cv82\common\1cestart.exe""" )
-	$sComConnectorObj	= IniRead($sIniFileName,	"EXCHANGE", "ComConnectorObj", "V82.COMConnector")
+	$sComConnectorObj	= IniRead($sIniFileName,	"EXCHANGE", "ComConnectorObj", "V83.COMConnector")
 	$sArcLogfileName	= IniRead($sIniFileName,	"EXCHANGE", "ArcLogfileName", "retail_exchange_DDMMYYYY_log.old")
 	$cPIDFileExt		= IniRead($sIniFileName,	"EXCHANGE", "PIDFileExt", "pid")	
 	$iLogMaxSize		= Int(IniRead($sIniFileName,	"EXCHANGE", "LogMaxSize", 512000))
@@ -287,6 +287,8 @@ Func RunUpdateCfg()
 		$sIBPath	=	$aConnParams[0]
 		$sIBAdmin	=	$aConnParams[1]
 		$sIBAdminPwd=	$aConnParams[2]
+		
+		; —юда добавить обработки, которые выгон€ют пользователей
 		
 		$sUpdCmdLine	=	$sV8exePath & " DESIGNER /F" & $sIBPath  & " /N" & $sIBAdminPwd & " /P" & $sIBAdminPwd 
 		$sUpdCmdLine	=	$sUpdCmdLine & " /WA- /UpdateDBCfg /Out""" & $sServiceFileName & """ -NoTruncate /DisableStartupMessages"
